@@ -10,18 +10,48 @@ public class GameManager : MonoBehaviour
     private int[,] _gameArea = new int[4,4]; // значения плиток
     private Vector2[,] _positions = new Vector2[4,4]; // позиция для UI
     
-    // Start is called before the first frame update
     void Start()
     {
         _tiles = new List<GameObject>();
         _gameArea = new int[4,4];
         InitializeGame();
     }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.A)) MoveLeft();
+        if (Input.GetKeyDown(KeyCode.D)) MoveRight();
+        if (Input.GetKeyDown(KeyCode.W)) MoveUp();
+        if (Input.GetKeyDown(KeyCode.S)) MoveDown();
+    }
     
     private void InitializeGame()
     {
         GenerateRandomTile();
         GenerateRandomTile();
+    }
+
+    public void RestartGame()
+    {
+        // очищаем поле
+        _gameArea = new int[4, 4];
+        
+        // удаляем визуальные объекты
+        foreach (GameObject tile in _tiles)
+        {
+            if(tile != null)
+                DestroyImmediate(tile);
+        }
+        _tiles.Clear();
+        
+        // сбрасываем счет
+        if (ScoreManager.Instance != null)
+        {
+            ScoreManager.Instance.ResetCurrentScore();
+        }
+        
+        // начинаем заново
+        InitializeGame();
     }
 
     private Vector2Int GetRandomPosition()
@@ -82,5 +112,253 @@ public class GameManager : MonoBehaviour
         float y = startY - gridPos.x * cellSize;
         
         return new Vector2(x, y);
+    }
+
+    public void MoveLeft()
+    {
+        bool moved = false;
+        bool[,] merged = new bool[4, 4]; // для отслеживания какие плитки уже объединились в этом ходу
+
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 1; col < 4; col++) // начиная с первой колонны, двигаемся влево
+            {
+                if (_gameArea[row, col] != 0) // если плитка не пустая
+                {
+                    int currentCol = col;
+                    
+                    // двигаем плитку влево пока возможно
+                    while (currentCol > 0)
+                    {   
+                        // если слева пусто - двигаем
+                        if (_gameArea[row, currentCol - 1] == 0)
+                        {
+                            _gameArea[row, currentCol - 1] = _gameArea[row, currentCol];
+                            _gameArea[row, currentCol] = 0;
+                            currentCol--;
+                            moved = true;
+                        }
+                        // если слева такая же плитка и она еще не объединялась
+                        else if (_gameArea[row, currentCol - 1] == _gameArea[row, currentCol] &&
+                                 !merged[row, currentCol - 1])
+                        {
+                            int mergedValue = _gameArea[row, currentCol - 1] * 2;
+                            _gameArea[row, currentCol - 1] = mergedValue; // удваиваем значение (объединяем)
+                            _gameArea[row, currentCol] = 0; // убираем исходную плитку
+                            merged[row, currentCol - 1] = true; // помечаем как объединенную
+                            moved = true;
+                            
+                            // добавляем очки
+                            if (ScoreManager.Instance != null)
+                            {
+                                ScoreManager.Instance.AddScore(mergedValue);
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            break; // не можем двигаться дальше, останавливаем цикл
+                        }
+                    }
+                }
+            }
+        }
+        if (moved)
+        {
+            UpdateVisuals();
+            GenerateRandomTile();
+        }
+    }
+    
+    public void MoveRight()
+    {
+        bool moved = false;
+        bool[,] merged = new bool[4, 4];
+
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 2; col >= 0; col--) // начинаем справа, двигаемся вправо
+            {
+                if (_gameArea[row, col] != 0) // если плитка не пустая
+                {
+                    int currentCol = col;
+                    
+                    // двигаем плитку вправо пока возможно
+                    while (currentCol < 3)
+                    {   
+                        // если справа пусто - двигаем
+                        if (_gameArea[row, currentCol + 1] == 0)
+                        {
+                            _gameArea[row, currentCol + 1] = _gameArea[row, currentCol];
+                            _gameArea[row, currentCol] = 0;
+                            currentCol++;
+                            moved = true;
+                        }
+                        // если справа такая же плитка и она еще не объединялась
+                        else if (_gameArea[row, currentCol + 1] == _gameArea[row, currentCol] &&
+                                 !merged[row, currentCol + 1])
+                        {
+                            int mergedValue = _gameArea[row, currentCol + 1] * 2;
+                            _gameArea[row, currentCol + 1] = mergedValue; // удваиваем значение (объединяем)
+                            _gameArea[row, currentCol] = 0; // убираем исходную плитку
+                            merged[row, currentCol + 1] = true; // помечаем как объединенную
+                            moved = true;
+                            
+                            // добавляем очки
+                            if (ScoreManager.Instance != null)
+                            {
+                                ScoreManager.Instance.AddScore(mergedValue);
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            break; // не можем двигаться дальше, останавливаем цикл
+                        }
+                    }
+                }
+            }
+        }
+        if (moved)
+        {
+            UpdateVisuals();
+            GenerateRandomTile();
+        }
+    }
+    
+    public void MoveUp()
+    {
+        bool moved = false;
+        bool[,] merged = new bool[4, 4];
+
+        for (int col = 0; col < 4; col++)
+        {
+            for (int row = 1; row < 4; row++) // начинаем с ряда 1, двигаемся вверх
+            {
+                if (_gameArea[row, col] != 0) // если плитка не пустая
+                {
+                    int currentRow = row;
+                    
+                    // двигаем плитку вверх пока возможно
+                    while (currentRow > 0)
+                    {   
+                        // если сверху пусто - двигаем
+                        if (_gameArea[currentRow - 1, col] == 0)
+                        {
+                            _gameArea[currentRow - 1, col] = _gameArea[currentRow, col];
+                            _gameArea[currentRow, col] = 0;
+                            currentRow--;
+                            moved = true;
+                        }
+                        // если сверху такая же плитка и она еще не объединялась
+                        else if (_gameArea[currentRow - 1, col] == _gameArea[currentRow, col] &&
+                                 !merged[currentRow - 1, col])
+                        {
+                            int mergedValue = _gameArea[currentRow - 1, col] * 2;
+                            _gameArea[currentRow - 1, col] = mergedValue; // удваиваем значение (объединяем)
+                            _gameArea[currentRow, col] = 0; // убираем исходную плитку
+                            merged[currentRow - 1, col] = true; // помечаем как объединенную
+                            moved = true;
+                            
+                            // добавляем очки
+                            if (ScoreManager.Instance != null)
+                            {
+                                ScoreManager.Instance.AddScore(mergedValue);
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            break; // не можем двигаться дальше, останавливаем цикл
+                        }
+                    }
+                }
+            }
+        }
+        if (moved)
+        {
+            UpdateVisuals();
+            GenerateRandomTile();
+        }
+    }
+    
+    public void MoveDown()
+    {
+        bool moved = false;
+        bool[,] merged = new bool[4, 4];
+
+        for (int col = 0; col < 4; col++)
+        {
+            for (int row = 2; row >= 0; row--) // начинаем снизу, двигаемся вниз
+            {
+                if (_gameArea[row, col] != 0) // если плитка не пустая
+                {
+                    int currentRow = row;
+                    
+                    // двигаем плитку вниз пока возможно
+                    while (currentRow < 3)
+                    {   
+                        // если снизу пусто - двигаем
+                        if (_gameArea[currentRow + 1, col] == 0)
+                        {
+                            _gameArea[currentRow + 1, col] = _gameArea[currentRow, col];
+                            _gameArea[currentRow, col] = 0;
+                            currentRow++;
+                            moved = true;
+                        }
+                        // если снизу такая же плитка и она еще не объединялась
+                        else if (_gameArea[currentRow + 1, col] == _gameArea[currentRow, col] &&
+                                 !merged[currentRow + 1, col])
+                        {
+                            int mergedValue = _gameArea[currentRow + 1, col] * 2;
+                            _gameArea[currentRow + 1, col] = mergedValue; // удваиваем значение (объединяем)
+                            _gameArea[currentRow, col] = 0; // убираем исходную плитку
+                            merged[currentRow + 1, col] = true; // помечаем как объединенную
+                            moved = true;
+                            
+                            // добавляем очки
+                            if (ScoreManager.Instance != null)
+                            {
+                                ScoreManager.Instance.AddScore(mergedValue);
+                            }
+                            break;
+                        }
+                        else
+                        {
+                            break; // не можем двигаться дальше, останавливаем цикл
+                        }
+                    }
+                }
+            }
+        }
+        if (moved)
+        {
+            UpdateVisuals();
+            GenerateRandomTile();
+        }
+    }
+
+    private void UpdateVisuals()
+    {
+        // удаляем все существующие визуальные плитки
+        foreach (GameObject tile in _tiles)
+        {
+            if (tile != null)
+                DestroyImmediate(tile);
+        }
+
+        _tiles.Clear();
+
+        // создаем новые объекты для всех НЕпустых клеток
+        for (int row = 0; row < 4; row++)
+        {
+            for (int col = 0; col < 4; col++)
+            {
+                if (_gameArea[row, col] != 0)
+                {
+                    GenerateTileVisual(new Vector2Int(row, col), _gameArea[row, col]);
+                }
+            }
+        }
     }
 }
