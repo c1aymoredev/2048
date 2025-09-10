@@ -4,11 +4,25 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    public static GameManager Instance;
+    
     [SerializeField] private GameObject tilePrefab;
     private List<GameObject> _tiles;
     
     private int[,] _gameArea = new int[4,4]; // значения плиток
     private Vector2[,] _positions = new Vector2[4,4]; // позиция для UI
+
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
     
     void Start()
     {

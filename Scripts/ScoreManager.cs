@@ -34,12 +34,22 @@ public class ScoreManager : MonoBehaviour
             bestScore = currentScore;
             SaveBestScore();
         }
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateScoreUI();
+        }
     }
     
     // сбрасываем текущий счет при новой игре
     public void ResetCurrentScore()
     {
         currentScore = 0;
+
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.UpdateScoreUI();
+        }
     }
 
     // сохраняем рекорд в PlayerPrefs
